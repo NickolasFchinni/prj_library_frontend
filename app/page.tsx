@@ -1,112 +1,25 @@
-"use client"
-import { toast, Toaster } from "react-hot-toast"
-import React, { useEffect, useState } from "react"
-import axios from "axios"
+"use client";
+import { Toaster } from "react-hot-toast";
+import { useLibrary } from "./hooks/useLibrary";
 
 const Home = () => {
-  const [livros, setLivros] = useState([])
-  const [favoritos, setFavoritos] = useState<any[]>([])
-  const [search, setSearch] = useState("")
-  const [tab, setTab] = useState("livros")
-  const [showModal, setShowModal] = useState(false)
-  const [novoLivro, setNovoLivro] = useState({ title: "", author: "" })
-
-  useEffect(() => {
-    fetchLivros()
-  }, [])
-
-  const fetchLivros = async () => {
-    try {
-      const token = localStorage.getItem("token")
-      const response = await axios.get("http://127.0.0.1:8000/books", {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      setLivros(response.data)
-    } catch (err) {
-      console.error("Erro ao buscar livros:", err)
-    }
-  }
-
-  const fetchFavoritos = async () => {
-    try {
-      const token = localStorage.getItem("token")
-      const userId = localStorage.getItem("userId")
-      if (!userId) return
-
-      const response = await axios.get(
-        `http://127.0.0.1:8000/favorites/${userId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      )
-
-      const favoritosData = response.data || []
-
-      const livrosFavoritos = favoritosData
-        .map((fav: any) => fav.book)
-        .filter((book: any) => book && book.title)
-
-      setFavoritos(livrosFavoritos)
-    } catch (err) {
-      console.error("Erro ao buscar favoritos:", err)
-    }
-  }
-
-  const adicionarFavorito = async (livro: any) => {
-    try {
-      const token = localStorage.getItem("token")
-      const userId = localStorage.getItem("userId")
-
-      if (!userId) {
-        toast.error("Usuário não identificado.")
-        return
-      }
-
-      await axios.post(
-        `http://127.0.0.1:8000/favorites/${userId}/${livro.id}`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      )
-
-      toast.success("Livro adicionado aos favoritos!")
-    } catch (err: any) {
-      if (err.response && err.response.status === 400) {
-        toast.error(err.response.data.detail)
-      }
-      console.error("Erro ao favoritar:", err)
-    }
-  }
-
-  const salvarNovoLivro = async () => {
-    try {
-      const token = localStorage.getItem("token")
-      await axios.post(
-        "http://127.0.0.1:8000/books",
-        { title: novoLivro.title, author: novoLivro.author },
-        { headers: { Authorization: `Bearer ${token}` } }
-      )
-      toast.success("Livro adicionado com sucesso!")
-      setShowModal(false)
-      setNovoLivro({ title: "", author: "" })
-      fetchLivros()
-    } catch (err) {
-      console.error("Erro ao adicionar livro:", err)
-    }
-  }
-
-  const handleTabChange = (newTab: string) => {
-    setTab(newTab)
-    if (newTab === "favoritos") {
-      fetchFavoritos()
-    }
-  }
-
-  const livrosFiltrados = (tab === "livros" ? livros : favoritos).filter(
-    (livro: any) =>
-      livro &&
-      livro.title &&
-      livro.title.toLowerCase().includes(search.toLowerCase())
-  )
+  const {
+    livros,
+    favoritos,
+    search,
+    tab,
+    showModal,
+    novoLivro,
+    livrosFiltrados,
+    setSearch,
+    setShowModal,
+    setNovoLivro,
+    adicionarFavorito,
+    removerFavorito,
+    removerLivro,
+    salvarNovoLivro,
+    handleTabChange,
+  } = useLibrary();
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -116,33 +29,38 @@ const Home = () => {
         </h1>
       </div>
       <Toaster position="top-right" reverseOrder={false} />
+      
       {/* Ações */}
-      <div className="flex flex-col sm:flex-row gap-4 w-full max-w-4xl mb-8">
-        <button
-          className={`flex-1 border border-gray-400 rounded-lg py-2 text-gray-700 hover:bg-gray-200 transition`}
-          onClick={() => handleTabChange("livros")}
-        >
-          Todos os Livros
-        </button>
-        <button
-          className="flex-1 border border-gray-400 rounded-lg py-2 text-gray-700 hover:bg-gray-200 transition"
-          onClick={() => handleTabChange("favoritos")}
-        >
-          Favoritos
-        </button>
-        <button
-          className="flex-1 bg-black text-white rounded-lg py-2 hover:bg-gray-800 transition"
-          onClick={() => setShowModal(true)}
-        >
-          + Adicionar
-        </button>
+      <div className="flex justify-center">
+        <div className="flex flex-col sm:flex-row gap-4 w-full max-w-4xl mb-8">
+          <button
+            className={`flex-1 border border-gray-400 rounded-lg py-2 text-gray-700 hover:bg-gray-200 transition`}
+            onClick={() => handleTabChange("livros")}
+          >
+            Todos os Livros
+          </button>
+          <button
+            className="flex-1 border border-gray-400 rounded-lg py-2 text-gray-700 hover:bg-gray-200 transition"
+            onClick={() => handleTabChange("favoritos")}
+          >
+            Favoritos
+          </button>
+          <button
+            className="flex-1 bg-black text-white rounded-lg py-2 hover:bg-gray-800 transition"
+            onClick={() => setShowModal(true)}
+          >
+            + Adicionar
+          </button>
+        </div>
       </div>
 
-      <div className="w-full max-w-4xl relative mb-8">
+      <div className="w-full relative mb-8">
         <input
           type="text"
           placeholder="Pesquisar livros..."
           className="w-full border border-gray-300 rounded-lg p-3 pl-10 focus:outline-none focus:ring-2 focus:ring-gray-400"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
         />
         <svg
           className="w-5 h-5 absolute top-1/2 left-3 transform -translate-y-1/2 text-gray-400"
@@ -171,12 +89,27 @@ const Home = () => {
             >
               <h3 className="text-lg font-semibold mb-1">{livro.title}</h3>
               <p className="text-gray-500 mb-2">{livro.author}</p>
-              {tab === "livros" && (
+              {tab === "livros" ? (
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => removerLivro(livro)}
+                    className="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                  >
+                    Deletar
+                  </button>
+                  <button
+                    onClick={() => adicionarFavorito(livro)}
+                    className="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                  >
+                    Favoritar
+                  </button>
+                </div>
+              ) : (
                 <button
-                  onClick={() => adicionarFavorito(livro)}
-                  className="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                  onClick={() => removerFavorito(livro)}
+                  className="mt-2 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
                 >
-                  Favoritar
+                  Remover
                 </button>
               )}
             </li>
@@ -225,7 +158,7 @@ const Home = () => {
         </div>
       )}
     </div>
-  )
-}
+  );
+};
 
-export default Home
+export default Home;

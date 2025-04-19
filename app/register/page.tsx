@@ -19,13 +19,17 @@ const Register = () => {
       return;
     }
 
+    console.log("registrando")
+
     try {
-      const response = await axios.post('http://127.0.0.1:8000/auth/register', {
+      await axios.post('http://127.0.0.1:8000/auth/register', {
         name,
         email,
         password,
       });
       
+      console.log("registrando cadastro")
+
       setSuccessMessage('Cadastro realizado com sucesso!');
       setTimeout(() => {
         window.location.href = '/login';
